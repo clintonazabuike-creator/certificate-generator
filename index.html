@@ -71,7 +71,7 @@
 
             <button @click="download" class="mt-10 w-full bg-amber-600 hover:bg-amber-500 text-white font-black py-5 rounded-2xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3">
                 <span x-show="!loading">DOWNLOAD OFFICIAL PDF</span>
-                <span x-show="loading" class="animate-pulse">PROCESSING BINARY...</span>
+                <span x-show="loading" class="animate-pulse tracking-widest">EXECUTING BUILD...</span>
             </button>
         </aside>
 
@@ -158,25 +158,58 @@
                 resetData() { this.formData = {}; },
                 async download() {
                     this.loading = true;
-                    const el = document.getElementById('capture');
-                    const canvas = await html2canvas(el, { 
-                        scale: 3, 
-                        backgroundColor: '#ffffff',
-                        logging: false
-                    });
-                    const imgData = canvas.toDataURL('image/png');
-                    const { PDFDocument } = PDFLib;
-                    const pdfDoc = await PDFDocument.create();
-                    const page = pdfDoc.addPage([842, 595]); // Standard A4 Landscape
-                    const pngImage = await pdfDoc.embedPng(imgData);
-                    page.drawImage(pngImage, { x: 0, y: 0, width: 842, height: 595 });
-                    const pdfBytes = await pdfDoc.save();
-                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-                    const link = document.createElement('a');
-                    link.href = URL.createObjectURL(blob);
-                    link.download = `${this.type}-registry-record.pdf`;
-                    link.click();
-                    this.loading = false;
+                    
+                    // OFF-SCREEN RENDERING ENGINE
+                    const original = document.getElementById('capture');
+                    const clone = original.cloneNode(true);
+                    
+                    // Force desktop-grade sizing for the binary capture
+                    clone.style.position = 'fixed';
+                    clone.style.top = '0';
+                    clone.style.left = '-4000px'; 
+                    clone.style.width = '1000px'; 
+                    clone.style.height = '707px';
+                    document.body.appendChild(clone);
+
+                    try {
+                        const canvas = await html2canvas(clone, { 
+                            scale: 3, 
+                            backgroundColor: '#ffffff',
+                            logging: false,
+                            useCORS: true,
+                            width: 1000,
+                            height: 707
+                        });
+                        
+                        const imgData = canvas.toDataURL('image/png', 1.0);
+                        document.body.removeChild(clone);
+
+                        const { PDFDocument } = PDFLib;
+                        const pdfDoc = await PDFDocument.create();
+                        
+                        // Exact A4 Landscape point conversion
+                        const page = pdfDoc.addPage([841.89, 595.28]); 
+                        const pngImage = await pdfDoc.embedPng(imgData);
+                        
+                        page.drawImage(pngImage, { 
+                            x: 0, 
+                            y: 0, 
+                            width: 841.89, 
+                            height: 595.28 
+                        });
+
+                        const pdfBytes = await pdfDoc.save();
+                        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                        
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `${this.type}-registry-record.pdf`;
+                        link.click();
+                    } catch (err) {
+                        console.error("PDF Engine Failure:", err);
+                    } finally {
+                        this.loading = false;
+                    }
                 }
             }
         }
