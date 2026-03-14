@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serverless CertGen - 9 Templates</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Great+Vibes&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+    <style>
+        .font-serif-classic { font-family: 'Cinzel', serif; }
+        .font-cursive { font-family: 'Great+Vibes', cursive; }
+        .cert-border { border: 20px double #d4af37; outline: 5px solid #d4af37; outline-offset: -25px; }
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body class="bg-slate-900 text-gray-100 min-h-screen flex flex-col md:flex-row">
+
+    <div class="w-full md:w-96 bg-slate-800 p-8 shadow-2xl z-10 no-print">
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent mb-2">CertifyFlow</h1>
+        <p class="text-gray-400 text-sm mb-8">100% Client-Side PDF Generator</p>
+
+        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Select Template</label>
+        <select id="templateSelect" class="w-full bg-slate-700 border border-slate-600 p-3 rounded-lg mb-6 focus:ring-2 focus:ring-yellow-500 outline-none transition-all">
+            <option value="marriage">Marriage Certificate</option>
+            <option value="death">Death Certificate</option>
+            <option value="birth">Birth Certificate</option>
+            <option value="completion">Course Completion</option>
+            <option value="diploma">University Diploma</option>
+            <option value="employee">Employee of the Month</option>
+            <option value="appreciation">Appreciation Award</option>
+            <option value="participation">Participation Certificate</option>
+            <option value="vaccine">Vaccination Record</option>
+        </select>
+
+        <div id="dynamicFields" class="space-y-4">
+            </div>
+
+        <button onclick="downloadPDF()" class="w-full mt-10 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-95 transition-all">
+            Download Official PDF
+        </button>
+        <p class="mt-4 text-[10px] text-gray-500 text-center uppercase tracking-widest">No Database • No Server • Privacy First</p>
+    </div>
+
+    <div class="flex-1 flex items-center justify-center p-4 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+        <div id="captureArea" class="bg-white text-slate-900 w-[1123px] h-[794px] p-12 cert-border flex flex-col justify-between text-center relative shadow-2xl">
+            <div class="border-2 border-gray-200 h-full w-full p-10 flex flex-col justify-center items-center">
+                <div class="mb-4">
+                    <img src="https://cdn-icons-png.flaticon.com/512/1021/1021183.png" class="w-16 h-16 opacity-20 mx-auto mb-2" alt="seal">
+                </div>
+                
+                <h2 id="displayTitle" class="font-serif-classic text-5xl mb-6 tracking-tighter uppercase">Certificate</h2>
+                <p class="text-xl italic font-serif mb-8 text-gray-600" id="displaySubtitle">This document serves as official recognition for</p>
+                
+                <h3 id="displayName" class="font-cursive text-7xl text-yellow-800 mb-8">Full Name</h3>
+                
+                <p id="displayDescription" class="max-w-2xl text-lg leading-relaxed text-gray-700">
+                    This is to certify that the individual named above has successfully met all required criteria and regulations set forth by the governing body on this day.
+                </p>
+
+                <div class="mt-16 w-full flex justify-around items-end">
+                    <div class="flex flex-col items-center">
+                        <div class="border-b-2 border-slate-900 w-48 mb-2"></div>
+                        <span class="text-xs uppercase font-bold text-gray-500">Authorized Signature</span>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div id="displayDate" class="text-lg font-serif mb-1">March 14, 2026</div>
+                        <div class="border-b-2 border-slate-900 w-48 mb-2"></div>
+                        <span class="text-xs uppercase font-bold text-gray-500">Date Issued</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { jsPDF } = window.jspdf;
+
+        const templates = {
+            marriage: { title: "Certificate of Marriage", subtitle: "This certifies that", desc: "Were united in holy matrimony according to the laws of the state.", fields: ["Spouse A", "Spouse B", "Location", "Date", "Officiant"] },
+            death: { title: "Certificate of Death", subtitle: "Official record for", desc: "This document serves as the formal record of the passing of the individual named above.", fields: ["Deceased Name", "Date of Passing", "Place of Death", "Cause"] },
+            birth: { title: "Certificate of Birth", subtitle: "This certifies the birth of", desc: "Born into this world with all rights and privileges pertaining thereto.", fields: ["Child Name", "Parents", "Hospital", "Weight", "Time"] },
+            completion: { title: "Certificate of Completion", subtitle: "Awarded to", desc: "For successful completion of the requirements for the professional course specified.", fields: ["Student Name", "Course Title", "Instructor", "Grade"] },
+            diploma: { title: "University Diploma", subtitle: "The Trustees grant to", desc: "The Degree of Bachelor of Science with all honors and rights thereunto appertaining.", fields: ["Graduate Name", "Degree", "University", "Honors"] },
+            employee: { title: "Employee of the Month", subtitle: "Presented to", desc: "In recognition of outstanding performance and dedicated service to the organization.", fields: ["Employee Name", "Company", "Month", "Manager"] },
+            appreciation: { title: "Certificate of Appreciation", subtitle: "Gratefully presented to", desc: "For your invaluable contribution and selfless dedication to our common goals.", fields: ["Recipient", "Organization", "Project", "Date"] },
+            participation: { title: "Participation Award", subtitle: "This certifies that", desc: "Actively participated in and contributed to the success of the annual event.", fields: ["Participant", "Event Name", "Venue", "Date"] },
+            vaccine: { title: "Vaccination Record", subtitle: "Official record for", desc: "This individual has received the specified immunizations as recorded by health authorities.", fields: ["Patient Name", "Vaccine Type", "Clinic", "Batch ID"] }
+        };
+
+        const templateSelect = document.getElementById('templateSelect');
+        const dynamicFields = document.getElementById('dynamicFields');
+
+        function updateUI() {
+            const config = templates[templateSelect.value];
+            document.getElementById('displayTitle').innerText = config.title;
+            document.getElementById('displaySubtitle').innerText = config.subtitle;
+            document.getElementById('displayDescription').innerText = config.desc;
+            
+            dynamicFields.innerHTML = '';
+            config.fields.forEach(field => {
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label class="block text-xs text-gray-400 mb-1">${field}</label>
+                    <input type="text" placeholder="Enter ${field}" 
+                        class="w-full bg-slate-700 p-2 rounded border border-slate-600 focus:border-yellow-500 outline-none text-white"
+                        oninput="updatePreview('${field}', this.value)">
+                `;
+                dynamicFields.appendChild(div);
+            });
+        }
+
+        function updatePreview(field, value) {
+            if (field.includes('Name') || field.includes('Spouse') || field.includes('Participant') || field.includes('Recipient')) {
+                document.getElementById('displayName').innerText = value || "Full Name";
+            }
+            if (field === 'Date' || field.includes('Passing')) {
+                document.getElementById('displayDate').innerText = value || "March 14, 2026";
+            }
+        }
+
+        async function downloadPDF() {
+            const element = document.getElementById('captureArea');
+            const canvas = await html2canvas(element, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('l', 'mm', 'a4');
+            pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
+            pdf.save(`certificate-${Date.now()}.pdf`);
+        }
+
+        templateSelect.addEventListener('change', updateUI);
+        updateUI(); // Initial Load
+    </script>
+</body>
+  </html>
+
