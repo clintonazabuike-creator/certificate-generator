@@ -3,135 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Serverless CertGen - 9 Templates</title>
+    <title>CertOS | Professional Serverless Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Great+Vibes&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Libre+Baskerville&display=swap" rel="stylesheet">
     <style>
-        .font-serif-classic { font-family: 'Cinzel', serif; }
-        .font-cursive { font-family: 'Great+Vibes', cursive; }
-        .cert-border { border: 20px double #d4af37; outline: 5px solid #d4af37; outline-offset: -25px; }
-        @media print { .no-print { display: none; } }
+        [x-cloak] { display: none !important; }
+        .cert-canvas { font-family: 'Libre Baskerville', serif; transition: all 0.3s ease; }
+        .title-font { font-family: 'Cinzel Decorative', cursive; }
+        .grid-bg { background-image: radial-gradient(#334155 1px, transparent 1px); background-size: 20px 20px; }
     </style>
 </head>
-<body class="bg-slate-900 text-gray-100 min-h-screen flex flex-col md:flex-row">
+<body class="bg-slate-950 text-slate-200 grid-bg min-h-screen" x-data="certApp()" x-cloak>
 
-    <div class="w-full md:w-96 bg-slate-800 p-8 shadow-2xl z-10 no-print">
-        <h1 class="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-yellow-600 bg-clip-text text-transparent mb-2">CertifyFlow</h1>
-        <p class="text-gray-400 text-sm mb-8">100% Client-Side PDF Generator</p>
-
-        <label class="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Select Template</label>
-        <select id="templateSelect" class="w-full bg-slate-700 border border-slate-600 p-3 rounded-lg mb-6 focus:ring-2 focus:ring-yellow-500 outline-none transition-all">
-            <option value="marriage">Marriage Certificate</option>
-            <option value="death">Death Certificate</option>
-            <option value="birth">Birth Certificate</option>
-            <option value="completion">Course Completion</option>
-            <option value="diploma">University Diploma</option>
-            <option value="employee">Employee of the Month</option>
-            <option value="appreciation">Appreciation Award</option>
-            <option value="participation">Participation Certificate</option>
-            <option value="vaccine">Vaccination Record</option>
-        </select>
-
-        <div id="dynamicFields" class="space-y-4">
+    <div class="flex flex-col lg:flex-row h-screen">
+        
+        <aside class="w-full lg:w-[400px] bg-slate-900/80 backdrop-blur-xl border-r border-slate-800 p-8 overflow-y-auto flex flex-col">
+            <div class="mb-8">
+                <h1 class="text-2xl font-black tracking-tighter text-white">CERT<span class="text-amber-500">OS</span>.v1</h1>
+                <p class="text-xs text-slate-500 font-mono uppercase tracking-widest">High-Fidelity PDF Engine</p>
             </div>
 
-        <button onclick="downloadPDF()" class="w-full mt-10 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-4 rounded-xl shadow-lg transform active:scale-95 transition-all">
-            Download Official PDF
-        </button>
-        <p class="mt-4 text-[10px] text-gray-500 text-center uppercase tracking-widest">No Database • No Server • Privacy First</p>
-    </div>
+            <div class="space-y-1 mb-8">
+                <label class="text-[10px] font-bold text-slate-500 uppercase">Document Protocol</label>
+                <select x-model="activeType" @change="updateTemplate" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+                    <template x-for="(t, id) in templates" :key="id">
+                        <option :value="id" x-text="t.name"></option>
+                    </template>
+                </select>
+            </div>
 
-    <div class="flex-1 flex items-center justify-center p-4 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
-        <div id="captureArea" class="bg-white text-slate-900 w-[1123px] h-[794px] p-12 cert-border flex flex-col justify-between text-center relative shadow-2xl">
-            <div class="border-2 border-gray-200 h-full w-full p-10 flex flex-col justify-center items-center">
-                <div class="mb-4">
-                    <img src="https://cdn-icons-png.flaticon.com/512/1021/1021183.png" class="w-16 h-16 opacity-20 mx-auto mb-2" alt="seal">
+            <div class="flex-1 space-y-4">
+                <label class="text-[10px] font-bold text-slate-500 uppercase">Input Schema</label>
+                <template x-for="field in templates[activeType].fields" :key="field">
+                    <div>
+                        <input type="text" 
+                               :placeholder="field" 
+                               x-model="formData[field]"
+                               class="w-full bg-transparent border-b border-slate-700 py-2 text-sm focus:border-amber-500 outline-none transition-colors">
+                    </div>
+                </template>
+            </div>
+
+            <div class="pt-8">
+                <button @click="generatePDF" 
+                        class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(217,119,6,0.3)] transition-all flex items-center justify-center gap-2">
+                    <span x-show="!loading">Execute Build</span>
+                    <span x-show="loading" class="animate-spin text-lg italic">...</span>
+                </button>
+                <p class="mt-4 text-[9px] text-slate-600 text-center italic uppercase">Generated using client-side binary injection via PDF-LIB</p>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex items-center justify-center p-12 overflow-hidden bg-black/20">
+            <div id="preview-frame" class="relative bg-white text-slate-900 w-[842px] h-[595px] shadow-[0_40px_100px_rgba(0,0,0,0.5)] cert-canvas border-[16px] border-double border-amber-800 p-12 text-center flex flex-col justify-between overflow-hidden">
+                
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] rotate-[-30deg] scale-[2]">
+                    <h2 class="text-9xl font-black italic">ORIGINAL DOCUMENT</h2>
                 </div>
-                
-                <h2 id="displayTitle" class="font-serif-classic text-5xl mb-6 tracking-tighter uppercase">Certificate</h2>
-                <p class="text-xl italic font-serif mb-8 text-gray-600" id="displaySubtitle">This document serves as official recognition for</p>
-                
-                <h3 id="displayName" class="font-cursive text-7xl text-yellow-800 mb-8">Full Name</h3>
-                
-                <p id="displayDescription" class="max-w-2xl text-lg leading-relaxed text-gray-700">
-                    This is to certify that the individual named above has successfully met all required criteria and regulations set forth by the governing body on this day.
-                </p>
 
-                <div class="mt-16 w-full flex justify-around items-end">
-                    <div class="flex flex-col items-center">
-                        <div class="border-b-2 border-slate-900 w-48 mb-2"></div>
-                        <span class="text-xs uppercase font-bold text-gray-500">Authorized Signature</span>
-                    </div>
-                    <div class="flex flex-col items-center">
-                        <div id="displayDate" class="text-lg font-serif mb-1">March 14, 2026</div>
-                        <div class="border-b-2 border-slate-900 w-48 mb-2"></div>
-                        <span class="text-xs uppercase font-bold text-gray-500">Date Issued</span>
-                    </div>
+                <div class="z-10 flex flex-col h-full border border-slate-100 p-8">
+                    <header>
+                        <h2 class="title-font text-4xl mb-2 tracking-widest text-amber-900" x-text="templates[activeType].name"></h2>
+                        <div class="w-24 h-[2px] bg-amber-700 mx-auto mb-6"></div>
+                        <p class="italic text-slate-500 text-lg">This formal instrument acknowledges that</p>
+                    </header>
+
+                    <section class="flex-1 flex flex-col justify-center py-6">
+                        <h3 class="title-font text-6xl text-slate-800 mb-6 drop-shadow-sm" x-text="formData[templates[activeType].fields[0]] || 'Subject Name'"></h3>
+                        <p class="max-w-xl mx-auto text-slate-600 leading-relaxed text-lg" x-text="generateDescription()"></p>
+                    </section>
+
+                    <footer class="flex justify-between items-end px-10">
+                        <div class="text-center">
+                            <div class="w-40 border-b border-slate-900 mb-2"></div>
+                            <p class="text-[10px] uppercase tracking-tighter font-bold">Authorized Registrar</p>
+                        </div>
+                        <div class="pb-2">
+                            <div class="w-20 h-20 border-4 border-amber-900/20 rounded-full flex items-center justify-center opacity-40 grayscale">
+                                <div class="w-14 h-14 border border-amber-900/40 rounded-full flex items-center justify-center">
+                                    <span class="text-[8px] font-bold uppercase rotate-12 italic">Seal</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-40 border-b border-slate-900 mb-2" x-text="new Date().toLocaleDateString()"></div>
+                            <p class="text-[10px] uppercase tracking-tighter font-bold">Date of Execution</p>
+                        </div>
+                    </footer>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <script>
-        const { jsPDF } = window.jspdf;
+        function certApp() {
+            return {
+                loading: false,
+                activeType: 'marriage',
+                formData: {},
+                templates: {
+                    marriage: { name: 'Marriage Certificate', fields: ['Spouse A', 'Spouse B', 'Venue', 'Officiant', 'Witness'], desc: 'Were joined in holy matrimony according to the rites and ceremonies of the state.' },
+                    death: { name: 'Death Certificate', fields: ['Deceased', 'Date of Passing', 'Cause', 'Place of Death'], desc: 'The individual named above has been formally declared deceased following medical verification.' },
+                    birth: { name: 'Birth Certificate', fields: ['Child Name', 'Parents', 'Time', 'Hospital'], desc: 'This document serves as primary evidence of birth for the aforementioned child.' },
+                    completion: { name: 'Course Completion', fields: ['Student Name', 'Curriculum', 'Institution', 'Instructor'], desc: 'Has successfully fulfilled the rigorous academic requirements for the curriculum specified.' },
+                    diploma: { name: 'University Diploma', fields: ['Graduate', 'Degree', 'Major', 'Honors'], desc: 'The Board of Regents confers this degree with all rights, honors, and privileges appertaining.' },
+                    employee: { name: 'Employee of the Month', fields: ['Employee Name', 'Organization', 'Month', 'Performance Score'], desc: 'For exceptional service, dedication, and peerless contribution to company objectives.' },
+                    appreciation: { name: 'Certificate of Appreciation', fields: ['Recipient', 'Project', 'Organization', 'Contribution'], desc: 'This recognition is granted for selfless commitment and outstanding collaborative effort.' },
+                    participation: { name: 'Event Participation', fields: ['Participant', 'Event Title', 'Duration', 'Location'], desc: 'Has actively engaged in all primary sessions and workshops for the duration of the event.' },
+                    vaccine: { name: 'Vaccination Record', fields: ['Patient', 'Vaccine Type', 'Dose Count', 'Lot Number'], desc: 'Formal immunization record verifying the administration of biological prophylaxis.' }
+                },
+                generateDescription() {
+                    return this.templates[this.activeType].desc;
+                },
+                updateTemplate() {
+                    this.formData = {};
+                },
+                async generatePDF() {
+                    this.loading = true;
+                    try {
+                        const { PDFDocument, rgb, StandardFonts } = PDFLib;
+                        const pdfDoc = await PDFDocument.create();
+                        const page = pdfDoc.addPage([842, 595]); // A4 Landscape
+                        const font = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+                        const italicFont = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
 
-        const templates = {
-            marriage: { title: "Certificate of Marriage", subtitle: "This certifies that", desc: "Were united in holy matrimony according to the laws of the state.", fields: ["Spouse A", "Spouse B", "Location", "Date", "Officiant"] },
-            death: { title: "Certificate of Death", subtitle: "Official record for", desc: "This document serves as the formal record of the passing of the individual named above.", fields: ["Deceased Name", "Date of Passing", "Place of Death", "Cause"] },
-            birth: { title: "Certificate of Birth", subtitle: "This certifies the birth of", desc: "Born into this world with all rights and privileges pertaining thereto.", fields: ["Child Name", "Parents", "Hospital", "Weight", "Time"] },
-            completion: { title: "Certificate of Completion", subtitle: "Awarded to", desc: "For successful completion of the requirements for the professional course specified.", fields: ["Student Name", "Course Title", "Instructor", "Grade"] },
-            diploma: { title: "University Diploma", subtitle: "The Trustees grant to", desc: "The Degree of Bachelor of Science with all honors and rights thereunto appertaining.", fields: ["Graduate Name", "Degree", "University", "Honors"] },
-            employee: { title: "Employee of the Month", subtitle: "Presented to", desc: "In recognition of outstanding performance and dedicated service to the organization.", fields: ["Employee Name", "Company", "Month", "Manager"] },
-            appreciation: { title: "Certificate of Appreciation", subtitle: "Gratefully presented to", desc: "For your invaluable contribution and selfless dedication to our common goals.", fields: ["Recipient", "Organization", "Project", "Date"] },
-            participation: { title: "Participation Award", subtitle: "This certifies that", desc: "Actively participated in and contributed to the success of the annual event.", fields: ["Participant", "Event Name", "Venue", "Date"] },
-            vaccine: { title: "Vaccination Record", subtitle: "Official record for", desc: "This individual has received the specified immunizations as recorded by health authorities.", fields: ["Patient Name", "Vaccine Type", "Clinic", "Batch ID"] }
-        };
+                        // Draw UI Elements to PDF
+                        page.drawText(this.templates[this.activeType].name, { x: 50, y: 500, size: 40, font, color: rgb(0.2, 0.1, 0) });
+                        page.drawText(this.formData[this.templates[this.activeType].fields[0]] || 'Subject Name', { x: 50, y: 400, size: 50, font, color: rgb(0.1, 0.1, 0.1) });
+                        page.drawText(this.generateDescription(), { x: 50, y: 300, size: 14, font: italicFont, color: rgb(0.4, 0.4, 0.4) });
 
-        const templateSelect = document.getElementById('templateSelect');
-        const dynamicFields = document.getElementById('dynamicFields');
+                        // Meta-Data
+                        pdfDoc.setTitle(this.templates[this.activeType].name);
+                        pdfDoc.setAuthor('CertOS Generator');
 
-        function updateUI() {
-            const config = templates[templateSelect.value];
-            document.getElementById('displayTitle').innerText = config.title;
-            document.getElementById('displaySubtitle').innerText = config.subtitle;
-            document.getElementById('displayDescription').innerText = config.desc;
-            
-            dynamicFields.innerHTML = '';
-            config.fields.forEach(field => {
-                const div = document.createElement('div');
-                div.innerHTML = `
-                    <label class="block text-xs text-gray-400 mb-1">${field}</label>
-                    <input type="text" placeholder="Enter ${field}" 
-                        class="w-full bg-slate-700 p-2 rounded border border-slate-600 focus:border-yellow-500 outline-none text-white"
-                        oninput="updatePreview('${field}', this.value)">
-                `;
-                dynamicFields.appendChild(div);
-            });
-        }
-
-        function updatePreview(field, value) {
-            if (field.includes('Name') || field.includes('Spouse') || field.includes('Participant') || field.includes('Recipient')) {
-                document.getElementById('displayName').innerText = value || "Full Name";
+                        const pdfBytes = await pdfDoc.save();
+                        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                        const link = document.createElement('a');
+                        link.href = URL.createObjectURL(blob);
+                        link.download = `${this.activeType}-cert.pdf`;
+                        link.click();
+                    } catch (e) {
+                        console.error("Binary generation failed", e);
+                    }
+                    this.loading = false;
+                }
             }
-            if (field === 'Date' || field.includes('Passing')) {
-                document.getElementById('displayDate').innerText = value || "March 14, 2026";
-            }
         }
-
-        async function downloadPDF() {
-            const element = document.getElementById('captureArea');
-            const canvas = await html2canvas(element, { scale: 2 });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('l', 'mm', 'a4');
-            pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
-            pdf.save(`certificate-${Date.now()}.pdf`);
-        }
-
-        templateSelect.addEventListener('change', updateUI);
-        updateUI(); // Initial Load
     </script>
 </body>
-  </html>
-
+</html>
