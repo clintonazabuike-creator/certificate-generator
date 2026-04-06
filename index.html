@@ -3,130 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CertOS v3 | Advanced Serverless Generator</title>
+    <title>State Registry Engine | MI-Style</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Libre+Baskerville:ital,wght@0,400;1,400&family=Dancing+Script:wght@700&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Libre+Baskerville:ital,wght@0,400;1,400&family=Dancing+Script:wght@700&family=Playfair+Display:wght@900&display=swap" rel="stylesheet">
     <style>
-        .cert-font { font-family: 'Libre Baskerville', serif; }
-        .title-font { font-family: 'Cinzel', serif; }
-        .signature-font { font-family: 'Dancing Script', cursive; }
-        .stamp-font { font-family: 'Montserrat', sans-serif; }
-        .border-gold { border: 20px double #78350f; outline: 4px solid #78350f; outline-offset: -28px; }
+        .font-serif { font-family: 'Libre Baskerville', serif; }
+        .font-header { font-family: 'Cinzel', serif; }
+        .font-signature { font-family: 'Dancing Script', cursive; }
+        .font-gov { font-family: 'Playfair Display', serif; }
+        
+        /* Marriage: Ornate & Elegant */
+        .marriage-border { border: 15px double #5c4033; outline: 2px solid #5c4033; outline-offset: -20px; background-color: #fffaf0; }
+        
+        /* Death: Grid-based & Clinical */
+        .death-border { border: 2px solid #000; background-color: #fdfdfd; }
+        .death-grid div { border: 1px solid #000; padding: 4px 8px; }
+        .death-label { font-size: 8px; font-weight: bold; text-transform: uppercase; color: #333; display: block; }
+        
         [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="bg-[#0a0a0a] text-zinc-400 min-h-screen font-sans" x-data="app()" x-cloak>
+<body class="bg-zinc-900 text-zinc-300 font-sans" x-data="app()" x-cloak>
 
-    <div class="flex flex-col lg:flex-row h-screen overflow-hidden">
-        
-        <aside class="w-full lg:w-96 bg-[#121212] border-r border-white/5 p-8 flex flex-col shadow-2xl overflow-y-auto">
-            <div class="mb-10">
-                <h1 class="text-2xl font-black text-white tracking-tighter italic">CERTIFY<span class="text-amber-500">PRO</span></h1>
-                <p class="text-[9px] text-zinc-500 tracking-[0.3em] uppercase mt-1 font-bold">100% Client-Side Engine</p>
+    <div class="flex h-screen overflow-hidden">
+        <aside class="w-96 bg-black p-8 overflow-y-auto border-r border-white/10 shadow-2xl">
+            <h1 class="text-xl font-header text-amber-500 mb-6">State Registry v4</h1>
+            
+            <div class="mb-8">
+                <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 block">Document Type</label>
+                <div class="flex gap-2">
+                    <button @click="type = 'marriage'" :class="type === 'marriage' ? 'bg-amber-600 text-white' : 'bg-zinc-800'" class="flex-1 py-2 text-xs font-bold rounded">MARRIAGE</button>
+                    <button @click="type = 'death'" :class="type === 'death' ? 'bg-zinc-600 text-white' : 'bg-zinc-800'" class="flex-1 py-2 text-xs font-bold rounded">DEATH</button>
+                </div>
             </div>
 
-            <div class="space-y-8 flex-1">
-                <section>
-                    <label class="text-[10px] font-black text-amber-500 uppercase tracking-widest block mb-3">Protocol</label>
-                    <select x-model="type" @change="resetData()" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl text-sm text-white focus:ring-2 focus:ring-amber-500 outline-none transition-all">
-                        <template x-for="(t, id) in templates" :key="id">
-                            <option :value="id" x-text="t.name" class="bg-zinc-900"></option>
-                        </template>
-                    </select>
-                </section>
-
-                <section class="space-y-5">
-                    <label class="text-[10px] font-black text-amber-500 uppercase tracking-widest block">Certificate Data</label>
-                    <template x-for="field in templates[type].fields" :key="field">
-                        <div class="relative">
-                            <input type="text" x-model="formData[field]" placeholder=" " 
-                                   class="peer w-full bg-transparent border-b border-white/10 py-3 text-sm text-white focus:border-amber-500 outline-none transition-all">
-                            <label class="absolute left-0 top-3 text-zinc-500 text-sm transition-all peer-focus:-top-4 peer-focus:text-xs peer-focus:text-amber-500 pointer-events-none" x-text="field"></label>
-                        </div>
-                    </template>
-                </section>
-
-                <section class="space-y-6">
+            <div class="space-y-4">
+                <template x-for="field in fields[type]" :key="field">
                     <div>
-                        <label class="text-[10px] font-black text-amber-500 uppercase tracking-widest block mb-2">Authorized Signatory Name</label>
-                        <input type="text" x-model="signatory" placeholder="John Hancock" 
-                               class="w-full bg-white/5 border border-white/10 p-3 rounded-lg text-sm text-white outline-none">
+                        <label class="text-[9px] font-bold text-zinc-600 uppercase" x-text="field"></label>
+                        <input type="text" x-model="formData[field]" class="w-full bg-zinc-900 border border-zinc-800 p-2 text-sm text-white focus:border-amber-500 outline-none rounded">
                     </div>
-
-                    <div>
-                        <label class="text-[10px] font-black text-amber-500 uppercase tracking-widest block mb-3">Select Stamp</label>
-                        <div class="grid grid-cols-3 gap-2">
-                            <template x-for="(s, sId) in stamps" :key="sId">
-                                <button @click="activeStamp = sId" 
-                                        :class="activeStamp === sId ? 'border-amber-500 bg-amber-500/10' : 'border-white/10'"
-                                        class="border p-2 rounded-lg text-[10px] font-bold uppercase text-white transition-all" x-text="sId"></button>
-                            </template>
-                        </div>
-                    </div>
-                </section>
+                </template>
             </div>
 
-            <button @click="download" class="mt-10 w-full bg-amber-600 hover:bg-amber-500 text-white font-black py-5 rounded-2xl transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3">
-                <span x-show="!loading">DOWNLOAD OFFICIAL PDF</span>
-                <span x-show="loading" class="animate-pulse tracking-widest">EXECUTING BUILD...</span>
+            <button @click="download" class="mt-10 w-full bg-white text-black font-black py-4 rounded-lg hover:bg-amber-500 transition-all flex items-center justify-center gap-2">
+                <span x-show="!loading">GENERATE LEGAL PDF</span>
+                <span x-show="loading" class="animate-spin text-lg">⚙️</span>
             </button>
         </aside>
 
-        <main class="flex-1 bg-[#050505] p-12 flex items-center justify-center overflow-auto">
-            <div id="capture" class="w-[1000px] h-[707px] bg-white text-zinc-900 border-gold p-16 flex flex-col justify-between shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] relative overflow-hidden">
+        <main class="flex-1 bg-zinc-800 p-12 flex justify-center overflow-auto items-start">
+            <div id="capture" class="shrink-0 shadow-[0_50px_100px_rgba(0,0,0,0.5)]">
                 
-                <div class="z-10 border border-zinc-100 h-full w-full p-12 flex flex-col items-center text-center relative">
-                    
-                    <header class="mb-10">
-                        <h2 class="title-font text-4xl mb-2 tracking-[0.3em] text-amber-950 uppercase" x-text="templates[type].name"></h2>
-                        <div class="flex items-center gap-4 justify-center">
-                            <div class="h-[1px] w-20 bg-amber-800/30"></div>
-                            <span class="text-xs uppercase font-bold tracking-widest text-amber-800/60">Official Document</span>
-                            <div class="h-[1px] w-20 bg-amber-800/30"></div>
-                        </div>
-                    </header>
-
-                    <section class="flex-1 flex flex-col items-center justify-center w-full">
-                        <p class="cert-font italic text-xl text-zinc-400 mb-8">This is to certify the official record of</p>
+                <template x-if="type === 'marriage'">
+                    <div class="w-[850px] h-[1100px] marriage-border p-16 text-center flex flex-col justify-between text-stone-900">
+                        <header>
+                            <h2 class="font-header text-sm tracking-[0.4em] mb-4">State of Michigan</h2>
+                            <h1 class="font-header text-5xl mb-2 text-stone-800">Marriage License</h1>
+                            <p class="font-serif italic text-lg border-b border-stone-300 pb-4">This Certifies That</p>
+                        </header>
                         
-                        <h3 class="title-font text-6xl text-zinc-900 mb-8 border-b-2 border-zinc-50 px-12 pb-4 tracking-tighter" 
-                            x-text="formData[templates[type].fields[0]] || 'RECIPIENT NAME'"></h3>
-
-                        <p class="cert-font text-xl leading-relaxed max-w-2xl text-zinc-600 italic px-4" x-text="templates[type].desc"></p>
-                    </section>
-
-                    <footer class="w-full flex justify-between items-end mt-16 px-10 relative">
-                        
-                        <div class="text-center w-64">
-                            <div class="signature-font text-4xl text-blue-900 h-12 flex items-end justify-center mb-1" x-text="signatory"></div>
-                            <div class="w-full border-t border-zinc-900 mb-2"></div>
-                            <span class="text-[9px] font-black uppercase tracking-widest text-zinc-400">Authorized Signature</span>
+                        <div class="flex-1 flex flex-col justify-center gap-8">
+                            <div>
+                                <p class="text-4xl font-signature" x-text="formData['Full Name (Spouse A)'] || 'Name of Spouse A'"></p>
+                                <div class="w-64 h-[1px] bg-stone-400 mx-auto mt-2"></div>
+                                <span class="text-[10px] uppercase font-bold text-stone-500">Spouse A</span>
+                            </div>
+                            <span class="font-serif text-2xl italic text-stone-400">and</span>
+                            <div>
+                                <p class="text-4xl font-signature" x-text="formData['Full Name (Spouse B)'] || 'Name of Spouse B'"></p>
+                                <div class="w-64 h-[1px] bg-stone-400 mx-auto mt-2"></div>
+                                <span class="text-[10px] uppercase font-bold text-stone-500">Spouse B</span>
+                            </div>
+                            <p class="font-serif italic text-lg px-20">Were united in Holy Matrimony according to the laws of the State at the place and date specified below.</p>
                         </div>
 
-                        <div class="absolute left-1/2 -translate-x-1/2 -bottom-4">
-                            <div class="relative w-32 h-32 flex items-center justify-center opacity-80" :style="`color: ${stamps[activeStamp].color}`">
-                                <svg class="absolute inset-0 w-full h-full rotate-[-15deg]" viewBox="0 0 100 100">
-                                    <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="2,2"/>
-                                    <circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-width="1"/>
-                                </svg>
-                                <div class="stamp-font text-center rotate-[-15deg]">
-                                    <div class="text-[8px] font-black uppercase" x-text="stamps[activeStamp].top"></div>
-                                    <div class="text-xs font-black uppercase leading-tight py-1 border-y border-current" x-text="stamps[activeStamp].mid"></div>
-                                    <div class="text-[7px] font-black uppercase mt-1">VERIFIED REGISTRY</div>
+                        <footer class="grid grid-cols-2 gap-12 text-left px-10">
+                            <div class="space-y-4">
+                                <div>
+                                    <span class="text-[10px] font-bold block uppercase">Date of Ceremony</span>
+                                    <p class="border-b border-stone-300 font-serif py-1" x-text="formData['Date of Marriage']"></p>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] font-bold block uppercase">Location</span>
+                                    <p class="border-b border-stone-300 font-serif py-1" x-text="formData['City/County']"></p>
                                 </div>
                             </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <span class="text-[10px] font-bold block uppercase">Officiant Signature</span>
+                                    <p class="font-signature text-2xl text-blue-900 border-b border-stone-300" x-text="formData['Officiant Name']"></p>
+                                </div>
+                                <div>
+                                    <span class="text-[10px] font-bold block uppercase">License Number</span>
+                                    <p class="font-mono text-xs py-1" x-text="formData['License Number'] || 'MI-000000'"></p>
+                                </div>
+                            </div>
+                        </footer>
+                    </div>
+                </template>
+
+                <template x-if="type === 'death'">
+                    <div class="w-[850px] h-[1100px] death-border p-8 bg-white text-black text-[10px] leading-tight">
+                        <div class="text-center mb-4 uppercase border-b-2 border-black pb-2">
+                            <h1 class="font-bold text-lg">State of Michigan - Department of Health</h1>
+                            <h2 class="font-bold text-sm tracking-widest">Certificate of Death</h2>
                         </div>
 
-                        <div class="text-center w-64">
-                            <div class="cert-font text-lg mb-2" x-text="new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })"></div>
-                            <div class="w-full border-t border-zinc-900 mb-2"></div>
-                            <span class="text-[9px] font-black uppercase tracking-widest text-zinc-400">Date of Attestation</span>
+                        <div class="death-grid grid grid-cols-12 border-t border-l border-black">
+                            <div class="col-span-8"><span class="death-label">1. Full Name of Deceased</span><p class="text-xs font-bold uppercase" x-text="formData['Full Name']"></p></div>
+                            <div class="col-span-2"><span class="death-label">2. Sex</span><p x-text="formData['Sex']"></p></div>
+                            <div class="col-span-2"><span class="death-label">3. Date of Death</span><p class="font-bold" x-text="formData['Date of Death']"></p></div>
+                            
+                            <div class="col-span-4"><span class="death-label">4. Social Security Number</span><p x-text="formData['SSN']"></p></div>
+                            <div class="col-span-4"><span class="death-label">5. Age</span><p x-text="formData['Age']"></p></div>
+                            <div class="col-span-4"><span class="death-label">6. Place of Death (City/County)</span><p x-text="formData['Place of Death']"></p></div>
+                            
+                            <div class="col-span-12 h-10 bg-gray-100 flex items-center font-bold px-2 border-r border-b">MEDICAL CERTIFICATION OF CAUSE</div>
+                            
+                            <div class="col-span-9 h-16"><span class="death-label">7. Immediate Cause (A)</span><p class="text-sm font-serif" x-text="formData['Cause (A)']"></p></div>
+                            <div class="col-span-3 h-16"><span class="death-label">Interval between onset</span><p x-text="formData['Interval']"></p></div>
+                            
+                            <div class="col-span-12 h-16"><span class="death-label">8. Other Significant Conditions</span><p x-text="formData['Other Conditions']"></p></div>
+                            
+                            <div class="col-span-6 h-16"><span class="death-label">9. Certifier Signature</span><p class="font-signature text-xl" x-text="formData['Certifier Name']"></p></div>
+                            <div class="col-span-6 h-16"><span class="death-label">10. License Number of Certifier</span><p x-text="formData['Certifier License']"></p></div>
                         </div>
-                    </footer>
-                </div>
+
+                        <div class="mt-8 border-2 border-black p-4 italic text-center text-xs">
+                            This is a certified copy of the record on file with the State Registrar. Any alteration or erasure voids this certificate.
+                        </div>
+                    </div>
+                </template>
+
             </div>
         </main>
     </div>
@@ -136,83 +148,47 @@
             return {
                 type: 'marriage',
                 loading: false,
-                signatory: 'Alexander Hamilton',
-                activeStamp: 'Official',
                 formData: {},
-                stamps: {
-                    Official: { color: '#991b1b', top: 'GOVERNMENT', mid: 'OFFICIAL' },
-                    Certified: { color: '#1e40af', top: 'REGISTRAR', mid: 'CERTIFIED' },
-                    Approved: { color: '#065f46', top: 'VALIDATED', mid: 'APPROVED' }
-                },
-                templates: {
-                    marriage: { name: 'Certificate of Marriage', fields: ['Primary Spouse', 'Secondary Spouse', 'Officiant', 'Venue'], desc: 'Have been united in holy matrimony according to the laws and statutes of the land, recorded this day in the central archives.' },
-                    death: { name: 'Certificate of Death', fields: ['The Deceased', 'Date of Passing', 'Cause', 'Place'], desc: 'Is formally recorded as deceased following medical and legal certification by authorized state personnel and medical examiners.' },
-                    birth: { name: 'Certificate of Birth', fields: ['The Child', 'Mother Name', 'Father Name', 'Hospital'], desc: 'Serves as primary evidence of live birth for the aforementioned child, registered and recorded in the civil registry.' },
-                    completion: { name: 'Certificate of Completion', fields: ['The Student', 'Curriculum', 'Institution', 'Final Grade'], desc: 'Has successfully fulfilled all educational requirements and rigorous assessments mandated for the completion of the program.' },
-                    diploma: { name: 'University Diploma', fields: ['The Graduate', 'Degree Major', 'University'], desc: 'The Board of Regents and University Faculty confer this degree with all the honors, rights, and privileges thereunto appertaining.' },
-                    employee: { name: 'Employee of the Month', fields: ['The Employee', 'Corporation', 'Month'], desc: 'Awarded in recognition of peerless service, dedication, and professional excellence within the organization.' },
-                    appreciation: { name: 'Award of Appreciation', fields: ['The Recipient', 'Organization'], desc: 'For outstanding commitment and invaluable contributions toward the successful completion of major institutional objectives.' },
-                    participation: { name: 'Participation Award', fields: ['The Participant', 'Event Name'], desc: 'For active engagement and contribution to the workshops and seminars held during the annual summit.' },
-                    vaccine: { name: 'Immunization Record', fields: ['The Patient', 'Vaccine Type', 'Batch ID'], desc: 'This record verifies that the individual has received the specified medical prophylaxis as administered by health authorities.' }
+                fields: {
+                    marriage: ['Full Name (Spouse A)', 'Full Name (Spouse B)', 'Date of Marriage', 'City/County', 'Officiant Name', 'License Number'],
+                    death: ['Full Name', 'Sex', 'Date of Death', 'Age', 'SSN', 'Place of Death', 'Cause (A)', 'Interval', 'Other Conditions', 'Certifier Name', 'Certifier License']
                 },
                 resetData() { this.formData = {}; },
                 async download() {
                     this.loading = true;
-                    
-                    // OFF-SCREEN RENDERING ENGINE
                     const original = document.getElementById('capture');
-                    const clone = original.cloneNode(true);
                     
-                    // Force desktop-grade sizing for the binary capture
-                    clone.style.position = 'fixed';
-                    clone.style.top = '0';
-                    clone.style.left = '-4000px'; 
-                    clone.style.width = '1000px'; 
-                    clone.style.height = '707px';
-                    document.body.appendChild(clone);
+                    // Fixed Capture Logic
+                    const canvas = await html2canvas(original, { 
+                        scale: 3, 
+                        useCORS: true,
+                        width: 850,
+                        height: 1100
+                    });
 
-                    try {
-                        const canvas = await html2canvas(clone, { 
-                            scale: 3, 
-                            backgroundColor: '#ffffff',
-                            logging: false,
-                            useCORS: true,
-                            width: 1000,
-                            height: 707
-                        });
-                        
-                        const imgData = canvas.toDataURL('image/png', 1.0);
-                        document.body.removeChild(clone);
+                    const imgData = canvas.toDataURL('image/png', 1.0);
+                    const { PDFDocument } = PDFLib;
+                    const pdfDoc = await PDFDocument.create();
+                    
+                    // Standard Portrait A4
+                    const page = pdfDoc.addPage([595.28, 841.89]); 
+                    const pngImage = await pdfDoc.embedPng(imgData);
+                    
+                    page.drawImage(pngImage, { 
+                        x: 0, y: 0, 
+                        width: 595.28, height: 841.89 
+                    });
 
-                        const { PDFDocument } = PDFLib;
-                        const pdfDoc = await PDFDocument.create();
-                        
-                        // Exact A4 Landscape point conversion
-                        const page = pdfDoc.addPage([841.89, 595.28]); 
-                        const pngImage = await pdfDoc.embedPng(imgData);
-                        
-                        page.drawImage(pngImage, { 
-                            x: 0, 
-                            y: 0, 
-                            width: 841.89, 
-                            height: 595.28 
-                        });
-
-                        const pdfBytes = await pdfDoc.save();
-                        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-                        
-                        const link = document.createElement('a');
-                        link.href = URL.createObjectURL(blob);
-                        link.download = `${this.type}-registry-record.pdf`;
-                        link.click();
-                    } catch (err) {
-                        console.error("PDF Engine Failure:", err);
-                    } finally {
-                        this.loading = false;
-                    }
+                    const pdfBytes = await pdfDoc.save();
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(new Blob([pdfBytes], { type: 'application/pdf' }));
+                    link.download = `${this.type}-state-record.pdf`;
+                    link.click();
+                    this.loading = false;
                 }
             }
         }
     </script>
 </body>
-</html>
+                                                                                                                                                     </html>
+                                                                                                                                                     
